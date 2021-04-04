@@ -43,6 +43,7 @@ pub fn run_vc_recording(
             None => {
                 println!("No default audio input device available for voice chat.");
                 println!("Check your OS's settings and verify you have a device available.");
+                println!("Work pipeline!");
                 return
             }
         };
