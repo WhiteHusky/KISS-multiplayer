@@ -17,21 +17,48 @@ jobs:
         os: [ubuntu-16.04, windows-latest]
     steps:
     - uses: actions/checkout@v2
+
     - name: Install alsa dev
       if: runner.os == 'Linux' 
       run: |
           sudo apt-get update
           sudo apt-get install libasound2-dev
+
+    - name: Cache Cargo registry
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
+    - name: Cache Cargo index
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
+    - name: Cache Cargo build
+      uses: actions/cache@v2
+      with:
+        path: target/debug
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
     - name: Build
-      working-directory: ./kissmp-bridge
-      run: cargo build --verbose --release
+      run: cargo build -p kissmp-bridge --verbose --release
+
     - name: Store Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: build_results
         path: |
-          ./kissmp-bridge/target/release/kissmp-bridge
-          ./kissmp-bridge/target/release/kissmp-bridge.exe
+          ./target/release/kissmp-bridge
+          ./target/release/kissmp-bridge.exe
+
   build_server:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -39,16 +66,41 @@ jobs:
         os: [ubuntu-16.04, windows-latest]
     steps:
     - uses: actions/checkout@v2
+
+    - name: Cache Cargo registry
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
+    - name: Cache Cargo index
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
+    - name: Cache Cargo build
+      uses: actions/cache@v2
+      with:
+        path: target/debug
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
     - name: Build
-      working-directory: ./kissmp-server
-      run: cargo build --verbose --release
+      run: cargo build -p kissmp-server --verbose --release
+
     - name: Store Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: build_results
         path: |
-          ./kissmp-server/target/release/kissmp-server
-          ./kissmp-server/target/release/kissmp-server.exe
+          ./target/release/kissmp-server
+          ./target/release/kissmp-server.exe
 
   build_master:
     runs-on: ${{ matrix.os }}
@@ -57,12 +109,37 @@ jobs:
         os: [ubuntu-16.04]
     steps:
     - uses: actions/checkout@v2
+
+    - name: Cache Cargo registry
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
+    - name: Cache Cargo index
+      uses: actions/cache@v2
+      with:
+        path: ~/.cargo/git
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
+    - name: Cache Cargo build
+      uses: actions/cache@v2
+      with:
+        path: target/debug
+        key: ${{ runner.os }}-stable-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-stable-cargo-registry-
+
     - name: Build
-      working-directory: ./kissmp-master
-      run: cargo build --verbose --release
+      run: cargo build -p kissmp-master --verbose --release
+
     - name: Store Artifacts
       uses: actions/upload-artifact@v2
       with:
         name: build_results
         path: |
-          ./kissmp-master/target/release/kissmp-master
+          ./target/release/kissmp-master
