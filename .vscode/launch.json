@@ -1,0 +1,134 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Bridge",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kissmp-bridge",
+                    "--package=kissmp-bridge",
+                    "--manifest-path=./kissmp-bridge/Cargo.toml"
+                ],
+                "filter": {
+                    "name": "kissmp-bridge",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/kissmp-bridge"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Bridge Testing",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=kissmp-bridge",
+                    "--package=kissmp-bridge",
+                    "--manifest-path=./kissmp-bridge/Cargo.toml"
+                ],
+                "filter": {
+                    "name": "kissmp-bridge",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/kissmp-bridge"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Server",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kissmp-server",
+                    "--package=kissmp-server",
+                    "--manifest-path=./kissmp-server/Cargo.toml"
+                ],
+                "filter": {
+                    "name": "kissmp-server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/kissmp-server"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Server Testing",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=kissmp-server",
+                    "--package=kissmp-server",
+                    "--manifest-path=./kissmp-server/Cargo.toml"
+                ],
+                "filter": {
+                    "name": "kissmp-server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/kissmp-server"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Master Server",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=kissmp-master",
+                    "--package=kissmp-master",
+                    "--manifest-path=./kissmp-master/Cargo.toml"
+                ],
+                "filter": {
+                    "name": "kissmp-master",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/kissmp-master"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Master Server Testing",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=kissmp-master",
+                    "--package=kissmp-master",
+                    "--manifest-path=./kissmp-master/Cargo.toml"
+                ],
+                "filter": {
+                    "name": "kissmp-master",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/kissmp-master"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Server/Bridge",
+            "configurations": [
+                "Server",
+                "Bridge"
+            ]
+        }
+    ]
+}
