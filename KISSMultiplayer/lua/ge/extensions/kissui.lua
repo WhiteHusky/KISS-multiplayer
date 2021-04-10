@@ -1,3 +1,4 @@
+local VERSION = "0.4.2"
 local M = {}
 local http = require("socket.http")
 
@@ -163,7 +164,7 @@ local function refresh_server_list()
   if b and b == "ok" then
     M.bridge_launched = true
   end
-  local b, _, _  = http.request("http://127.0.0.1:3693/"..M.master_addr.."/0.4.1")
+  local b, _, _  = http.request("http://127.0.0.1:3693/"..M.master_addr.."/"..VERSION)
   if b then
     M.server_list = jsonDecode(b) or {}
   end
@@ -559,6 +560,11 @@ local function draw_chat()
 
     for _, message in pairs(M.chat) do
       imgui.PushTextWrapPos(0)
+      if message.user_name ~= nil then
+        local color = imgui.ImVec4(message.user_color[1], message.user_color[2], message.user_color[3], message.user_color[4])
+        imgui.TextColored(color, "%s", message.user_name..":")
+        imgui.SameLine()
+      end
       if message.has_color then
         imgui.TextColored(imgui.ImVec4(message.color.r or 1, message.color.g or 1, message.color.b or 1, message.color.a or 1), "%s", message.text)
       else
@@ -741,14 +747,24 @@ local function onUpdate(dt)
   time_since_filters_change = time_since_filters_change + dt
 end
 
-local function add_message(message, color)
+local function add_message(message, color, sent_by)
   unread_message_count = unread_message_count + 1
   should_draw_unread_count = false
-  
+  local user_color
+  local user_name
+  if sent_by ~= nil then
+    if network.players[sent_by] then
+      local r,g,b,a = kissplayers.get_player_color(sent_by)
+      user_color = {r,g,b,a}
+      user_name = network.players[sent_by].name
+    end
+  end
   local has_color = color ~= nil and type(color) == 'table'
   local message_table = {
     text = message,
-    has_color = has_color
+    has_color = has_color,
+    user_color = user_color,
+    user_name = user_name
   }
   if has_color then
     message_table.color = color 
