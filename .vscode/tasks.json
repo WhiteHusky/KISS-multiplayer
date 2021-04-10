@@ -7,11 +7,12 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"args": [
+				"-p",
+				"kissmp-bridge"
+			],
 			"group": "build",
-			"label": "build bridge",
-			"options": {
-				"cwd": "./kissmp-bridge"
-			}
+			"label": "Build Bridge"
 		},
 		{
 			"type": "cargo",
@@ -19,104 +20,12 @@
 			"problemMatcher": [
 				"$rustc"
 			],
-			"group": "build",
-			"label": "build server",
-			"options": {
-				"cwd": "./kissmp-server"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "build",
-			"problemMatcher": [
-				"$rustc"
+			"args": [
+				"-p",
+				"kissmp-server"
 			],
 			"group": "build",
-			"label": "build master",
-			"options": {
-				"cwd": "./kissmp-master"
-			}
-		},
-		{
-			"label": "build all",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "build",
-			"dependsOn": [
-				"build bridge",
-				"build server",
-				"build master"
-			]
-		},
-		{
-			"label": "build for server testing",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "build",
-			"dependsOn": [
-				"build bridge",
-				"build server"
-			]
-		},
-		{
-			"label": "build for client testing",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "build",
-			"dependsOn": [
-				"build bridge"
-			]
-		},
-		{
-			"type": "cargo",
-			"command": "clean",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "clean",
-			"label": "clean bridge",
-			"options": {
-				"cwd": "./kissmp-bridge"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "clean",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "clean",
-			"label": "clean server",
-			"options": {
-				"cwd": "./kissmp-server"
-			}
-		},
-		{
-			"type": "cargo",
-			"command": "clean",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "clean",
-			"label": "clean master",
-			"options": {
-				"cwd": "./kissmp-master"
-			}
-		},
-		{
-			"label": "clean all",
-			"problemMatcher": [
-				"$rustc"
-			],
-			"group": "clean",
-			"dependsOn": [
-				"clean bridge",
-				"clean server",
-				"clean master"
-			]
+			"label": "Build Server"
 		}
 	]
 }
