@@ -602,68 +602,124 @@ pub fn list_mods(
     Ok((result, raw))
 }
 
+/*
+    f(x)^3#3221, https://discord.com/channels/770228946276450334/803090116859002881/862109286876184597
+    [7:14 PM] f(x)^3: I looked at another ssdp library, and using their get_bind_addr in igd, it works
+    [7:15 PM] f(x)^3: So in theory, we put this code in the server, and set IGD's bind address to get_bind_addr
+*/
+// -[
+
+#[cfg(not(windows))]
+#[inline]
+async fn get_bind_addr() -> Result<SocketAddr, std::io::Error> {
+    Ok(([0, 0, 0, 0], 0).into())
+}
+
+#[cfg(windows)]
+#[inline]
+fn get_bind_addr() -> Result<SocketAddr, std::io::Error> {
+    // Windows 10 is multihomed so that the address that is used for the broadcast send is not guaranteed to be your local ip address, it can be any of the virtual interfaces instead.
+    // Thanks to @dheijl for figuring this out <3 (https://github.com/jakobhellermann/ssdp-client/issues/3#issuecomment-687098826)
+    let any: SocketAddr = ([0, 0, 0, 0], 0).into();
+    let socket = UdpSocket::bind(any)?;
+    // TODO: We should use multiple services, but for now this is fine.
+    let googledns: SocketAddr = ([8, 8, 8, 8], 80).into();
+    socket.connect(googledns)?;
+    let bind_addr = socket.local_addr()?;
+
+    Ok(bind_addr)
+}
+
+// ]-
+
 pub fn upnp_pf(port: u16) -> Option<u16> {
-    match igd::search_gateway(Default::default()) {
+    // https://discord.com/channels/770228946276450334/803090116859002881/862113473651933244
+    // -[
+    let mut bind_sock_addr = match get_bind_addr() {
+        Ok(addr) => addr,
+        Err(_) =>  ([0, 0, 0, 0], 0).into()
+    };
+    bind_sock_addr.set_port(0);
+    let ipv4_bind_sock_addr = match bind_sock_addr {
+        SocketAddr::V4(ipv4_bind_sock_addr) => ipv4_bind_sock_addr,
+        _ => return None,
+    };
+    println!("uPnP: bind address is {}", ipv4_bind_sock_addr.ip());
+
+    let opts = igd::SearchOptions {
+        timeout: Some(std::time::Duration::from_secs(10)),
+        bind_addr: bind_sock_addr,
+        ..Default::default()
+    };
+
+    // ]-
+
+    match igd::search_gateway(opts) {
         Ok(gateway) => {
-            let ifs = match ifcfg::IfCfg::get() {
-                Ok(ifs) => ifs,
-                Err(e) => {
-                    eprintln!("could not get interfaces: {}", e);
+            let ipv4_gateway = match gateway.addr {
+                SocketAddr::V4(ipv4_gateway) => ipv4_gateway,
+                _ => {
+                    eprintln!("uPnP: this is a IPv6 only network and currently it is unsupported at this time");
                     return None;
-                }
+                },
             };
-
-            let mut valid_ips = Vec::new();
-            for interface in ifs {
-                for iface_addr in interface.addresses.iter() {
-                    match iface_addr.mask {
-                        Some(SocketAddr::V4(ipv4_mask)) => {
-                            let ipv4_addr = match iface_addr.address {
-                                Some(SocketAddr::V4(ipv4_addr)) => ipv4_addr,
-                                _ => continue,
-                            };
-
-                            if ipv4_addr.ip().is_private() {
-                                valid_ips.push(ipv4_addr);
-                            } else {
-                                continue;
+            let local_sock_addrs = match ifcfg::IfCfg::get() {
+                Ok(ifaces) => {
+                    let mut ipv4_local_sock_addrs = Vec::new();
+                    for iface in ifaces {
+                        for iface_addr in iface.addresses {
+                            match iface_addr.mask {
+                                Some(SocketAddr::V4(ipv4_sock_addr_mask)) => {
+                                    let sock_addr = iface_addr.address.unwrap();
+                                    let ipv4_sock_addr = match sock_addr {
+                                        SocketAddr::V4(ipv4_sock_addr) => ipv4_sock_addr,
+                                        _ => continue,
+                                    };
+                                    let ipv4_addr_mask = ipv4_sock_addr_mask.ip();
+                                    let ipv4_addr = ipv4_sock_addr.ip();
+                                    let network = Ipv4Network::with_netmask(*ipv4_addr, *ipv4_addr_mask).unwrap();
+                                    if network.contains(*ipv4_gateway.ip()) {
+                                        ipv4_local_sock_addrs.push(sock_addr)
+                                    } else {
+                                        continue
+                                    }
+                                },
+                                // TODO: v6 Addresses are compatible with uPnP as it turns out, but we don't have a graceful way to handle this right now.
+                                _ => continue
                             }
                         }
-                        // v6 Addresses are not compatible with uPnP
-                        _ => continue,
                     }
-                }
-            }
+                    ipv4_local_sock_addrs
+                },
+                Err(e) => {
+                    eprintln!("uPnP: could not get interfaces: {}", e);
+                    return None;
+                },
+            };
 
-            println!(
-                "uPnP: We are going to try the following IPs: {:#?}",
-                valid_ips
-            );
-
-            if valid_ips.is_empty() {
-                eprintln!("uPnP: No interfaces have a valid IP.");
+            if local_sock_addrs.is_empty() {
+                eprintln!("uPnP: no interfaces are configured to the gateway?");
                 return None;
             }
 
-            for mut ip in valid_ips {
-                ip.set_port(port);
-                println!("uPnP: Trying {}", ip);
-                match gateway.add_port(igd::PortMappingProtocol::UDP, port, SocketAddr::V4(ip), 0, "KissMP Server")
-                {
-                    Ok(()) => return Some(port),
-                    Err(e) => match e {
-                        igd::AddPortError::PortInUse => return Some(port),
-                        _ => {
-                            eprintln!("uPnP Error: {:?}", e);
-                        }
-                    },
+            for mut local_sock_addr in local_sock_addrs {
+                local_sock_addr.set_port(port);
+                println!("uPnP: trying {}", local_sock_addr);
+                match gateway.add_port(igd::PortMappingProtocol::UDP, port, local_sock_addr, 0, "KissMP Server") {
+                    Ok(_) | Err(igd::AddPortError::PortInUse) => return Some(port),
+                    Err(e) => {
+                        eprintln!("uPnP: failed for {} with {}", local_sock_addr, e);
+                        continue
+                    }
+                    _ => continue,
                 }
             }
+            eprintln!("uPnP: no local ips worked");
             return None;
-        }
+        },
         Err(e) => {
-            eprintln!("uPnP: Failed to find gateway: {}", e);
-            None
-        }
+            eprintln!("uPnP: searching for gateway failed: {}", e);
+            return None;
+        },
     }
 }
